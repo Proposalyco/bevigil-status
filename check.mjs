@@ -78,7 +78,7 @@ async function pushover(e) {
     message: down
       ? `Failed twice in a row since ${e.st.since} UTC (${e.code ? `HTTP ${e.code}` : (e.error ?? "no response")}).`
       : `Recovered at ${now.toISOString()} UTC.`,
-    url: "https://proposalyco.github.io/bevigil-status/",
+    url: "https://status.bevigil.com.au/",
     priority: down ? "2" : "0",
     ...(down ? { retry: "300", expire: "3600" } : {}),
   });
