@@ -1,0 +1,26 @@
+{
+ "website": {
+  "fails": 0,
+  "down": false,
+  "since": null,
+  "issue": null
+ },
+ "dashboard": {
+  "fails": 0,
+  "down": false,
+  "since": null,
+  "issue": null
+ },
+ "database": {
+  "fails": 0,
+  "down": false,
+  "since": null,
+  "issue": null
+ },
+ "auth": {
+  "fails": 0,
+  "down": false,
+  "since": null,
+  "issue": null
+ }
+}

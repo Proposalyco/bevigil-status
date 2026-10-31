@@ -1,0 +1,6 @@
+[
+  { "id": "website", "name": "Website", "description": "bevigil.com.au", "url": "https://www.bevigil.com.au/" },
+  { "id": "dashboard", "name": "Manager dashboard", "description": "Sign in and the web dashboard", "url": "https://www.bevigil.com.au/login" },
+  { "id": "database", "name": "Database and guard app", "description": "Rosters, clock-ins, incidents and the mobile app's data", "url": "https://www.bevigil.com.au/api/health", "part": "database" },
+  { "id": "auth", "name": "Sign-in service", "description": "Logging in on the web and in the app", "url": "https://www.bevigil.com.au/api/health", "part": "auth" }
+]

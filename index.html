@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BeVigil Status</title>
+<meta name="description" content="Live status of BeVigil: website, manager dashboard, database, guard app and sign-in.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2 4 7v8c0 7.5 5.1 13.6 12 15 6.9-1.4 12-7.5 12-15V7z' fill='%232563eb'/%3E%3Cpath d='m10.5 16.5 3.8 3.8 7.4-8' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --text: #111827; --muted: #6b7280; --line: #e5e7eb;
+    --up: #16a34a; --down: #dc2626; --partial: #f59e0b; --none: #d1d5db; --accent: #2563eb;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0b1020; --card: #121a2e; --text: #e5e7eb; --muted: #94a3b8; --line: #1f2a44; --none: #334155; color-scheme: dark; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: calc(32px + env(safe-area-inset-top, 0px)) 16px calc(48px + env(safe-area-inset-bottom, 0px)); }
+  header { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; }
+  header svg { width: 32px; height: 32px; flex: none; }
+  header h1 { font-size: 20px; margin: 0; }
+  header a { margin-left: auto; color: var(--accent); text-decoration: none; font-size: 14px; }
+  .banner { border-radius: 12px; padding: 18px 20px; font-weight: 600; font-size: 17px; color: #fff; background: var(--up); margin-bottom: 20px; }
+  .banner.down { background: var(--down); }
+  .banner.loading { background: var(--none); color: var(--text); }
+  .notice { background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--partial); border-radius: 10px; padding: 14px 16px; margin-bottom: 20px; }
+  .notice b { display: block; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 4px 20px; }
+  .svc { padding: 18px 0; border-bottom: 1px solid var(--line); }
+  .svc:last-child { border-bottom: 0; }
+  .row { display: flex; align-items: baseline; gap: 12px; }
+  .row > div:first-child { flex: 1; min-width: 0; }
+  .name { font-weight: 600; }
+  .desc { color: var(--muted); font-size: 13px; }
+  .state { margin-left: auto; font-weight: 600; font-size: 14px; white-space: nowrap; }
+  .state.up { color: var(--up); } .state.down { color: var(--down); }
+  .bars { display: flex; gap: 2px; height: 32px; margin: 12px 0 6px; }
+  .bars span { flex: 1; border-radius: 2px; background: var(--none); min-width: 2px; }
+  .bars span.up { background: var(--up); } .bars span.partial { background: var(--partial); } .bars span.down { background: var(--down); }
+  .meta { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; gap: 8px; flex-wrap: wrap; }
+  footer { color: var(--muted); font-size: 13px; margin-top: 20px; text-align: center; }
+  footer a { color: var(--accent); }
+  @media (max-width: 480px) { .bars { gap: 1px; } .card { padding: 4px 14px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2 4 7v8c0 7.5 5.1 13.6 12 15 6.9-1.4 12-7.5 12-15V7z" fill="#2563eb"/><path d="m10.5 16.5 3.8 3.8 7.4-8" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <h1>BeVigil Status</h1>
+    <a href="https://www.bevigil.com.au">bevigil.com.au →</a>
+  </header>
+  <div id="banner" class="banner loading">Checking…</div>
+  <div id="notices"></div>
+  <div class="card" id="services"></div>
+  <footer>
+    <div id="updated"></div>
+    <div>Checked every 5 minutes from outside BeVigil. Problems? Email <a href="mailto:hello@bevigil.com.au">hello@bevigil.com.au</a></div>
+  </footer>
+</div>
+<script>
+(async () => {
+  const get = (f) => fetch(f + "?t=" + Date.now(), { cache: "no-store" }).then((r) => r.json()).catch(() => null);
+  const [services, checks, daily, updated, notice] = await Promise.all([
+    get("services.json"), get("data/checks.json"), get("data/daily.json"), get("data/updated.json"), get("data/notice.json"),
+  ]);
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const banner = document.getElementById("banner");
+  if (!services || !checks) { banner.textContent = "Status data unavailable right now."; return; }
+
+  const days = [];
+  for (let i = 89; i >= 0; i--) days.push(new Date(Date.now() - i * 864e5).toISOString().slice(0, 10));
+
+  let anyDown = false;
+  const list = document.getElementById("services");
+  for (const s of services) {
+    const recent = (checks[s.id] || []);
+    const last = recent[recent.length - 1];
+    // Down = the last two checks failed (one blip isn't an outage).
+    const down = recent.length >= 2 && !recent[recent.length - 1].ok && !recent[recent.length - 2].ok;
+    anyDown = anyDown || down;
+    const d = (daily && daily[s.id]) || {};
+    let up = 0, total = 0;
+    const svc = el("div", "svc");
+    const row = el("div", "row");
+    const label = el("div");
+    label.append(el("div", "name", s.name), el("div", "desc", s.description));
+    row.append(label, el("div", "state " + (down ? "down" : "up"), down ? "Down" : last ? "Operational" : "No data yet"));
+    const bars = el("div", "bars");
+    for (const day of days) {
+      const b = el("span");
+      const x = d[day];
+      if (x && x.total) {
+        up += x.up; total += x.total;
+        const pct = x.up / x.total;
+        b.className = pct >= 0.999 ? "up" : pct >= 0.95 ? "partial" : "down";
+        b.title = `${day}: ${(pct * 100).toFixed(2)}% up`;
+      } else b.title = `${day}: no data`;
+      bars.append(b);
+    }
+    const meta = el("div", "meta");
+    meta.append(el("span", "", "90 days ago"),
+      el("span", "", total ? `${((up / total) * 100).toFixed(2)}% uptime` + (last && last.ok ? ` · ${last.ms} ms` : "") : ""),
+      el("span", "", "Today"));
+    svc.append(row, bars, meta);
+    list.append(svc);
+  }
+  banner.className = "banner" + (anyDown ? " down" : "");
+  banner.textContent = anyDown ? "Some services are having problems. We're on it." : "All systems operational";
+
+  for (const n of (notice && notice.items) || []) {
+    const box = el("div", "notice");
+    box.append(el("b", "", n.title), el("span", "", n.body));
+    document.getElementById("notices").append(box);
+  }
+  if (updated && updated.at) {
+    const mins = Math.max(0, Math.round((Date.now() - new Date(updated.at)) / 60000));
+    document.getElementById("updated").textContent = `Last checked ${mins === 0 ? "just now" : mins + " min ago"}.`;
+  }
+})();
+</script>
+</body>
+</html>
