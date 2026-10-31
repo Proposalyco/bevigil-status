@@ -65,6 +65,27 @@ for (const s of services) {
   }
 }
 
+// Phone alert (Pushover) when PUSHOVER_TOKEN/PUSHOVER_USER are set: an outage
+// is an emergency (iOS Critical Alert, repeats every 5 min for up to an hour
+// until acknowledged); recovery is a normal notification.
+async function pushover(e) {
+  const t = process.env.PUSHOVER_TOKEN, u = process.env.PUSHOVER_USER;
+  if (!t || !u) return;
+  const down = e.type === "down";
+  const params = new URLSearchParams({
+    token: t, user: u,
+    title: down ? `BeVigil: ${e.s.name} is DOWN` : `BeVigil: ${e.s.name} is back up`,
+    message: down
+      ? `Failed twice in a row since ${e.st.since} UTC (${e.code ? `HTTP ${e.code}` : (e.error ?? "no response")}).`
+      : `Recovered at ${now.toISOString()} UTC.`,
+    url: "https://proposalyco.github.io/bevigil-status/",
+    priority: down ? "2" : "0",
+    ...(down ? { retry: "300", expire: "3600" } : {}),
+  });
+  await fetch("https://api.pushover.net/1/messages.json", { method: "POST", body: params }).catch(() => {});
+}
+for (const e of events) await pushover(e);
+
 // Issues are optional: only when running in Actions with a token.
 const repo = process.env.GITHUB_REPOSITORY, token = process.env.GITHUB_TOKEN;
 async function gh(path, method, body) {

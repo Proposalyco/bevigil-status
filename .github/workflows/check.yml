@@ -21,6 +21,8 @@ jobs:
       - run: node check.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
+          PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
       - name: Save results
         run: |
           git config user.name "status-bot"
