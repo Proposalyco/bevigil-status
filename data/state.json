@@ -12,13 +12,13 @@
   "issue": null
  },
  "database": {
-  "fails": 0,
+  "fails": 1,
   "down": false,
   "since": null,
   "issue": null
  },
  "auth": {
-  "fails": 0,
+  "fails": 1,
   "down": false,
   "since": null,
   "issue": null
